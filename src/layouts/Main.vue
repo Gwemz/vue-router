@@ -2,9 +2,9 @@
   <div class="container">
     <ul>
       <li>
-        <v-link href="/vue-router/">主页</v-link>
-        <v-link href="/vue-router/event">活动</v-link>
-        <v-link href="/vue-router/about">关于</v-link>
+        <v-link href="/">主页</v-link>
+        <v-link href="/event">活动</v-link>
+        <v-link href="/about">关于</v-link>
       </li>
     </ul>
 
