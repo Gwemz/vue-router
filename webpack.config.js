@@ -1,56 +1,73 @@
-var path = require('path')
-var webpack = require('webpack')
+const resolve = require('path').resolve
+const webpack = require('webpack')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
+const url = require('url')
+const publicPath = ''
 
-module.exports = {
-  entry: './src/main.js',
+module.exports = (options = {}) => ({
+  entry: {
+    vendor: './src/vendor',
+    index: './src/main.js'
+  },
   output: {
-    path: path.resolve(__dirname, './dist'),
-    publicPath: '/dist/',
-    filename: 'build.js'
+    path: resolve(__dirname, 'dist'),
+    filename: options.dev ? '[name].js' : '[name].js?[chunkhash]',
+    chunkFilename: '[id].js?[chunkhash]',
+    publicPath: options.dev ? '/assets/' : publicPath
   },
   module: {
-    rules: [
-      {
+    rules: [{
         test: /\.vue$/,
-        use: {
-          loader: 'vue-loader'
-        }
+        use: ['vue-loader']
       },
       {
         test: /\.js$/,
-        exclude: /node_modules/,
-        use: {
-          loader: 'babel-loader'
-        }
+        use: ['babel-loader'],
+        exclude: /node_modules/
+      },
+      {
+        test: /\.css$/,
+        use: ['style-loader', 'css-loader', 'postcss-loader']
+      },
+      {
+        test: /\.(png|jpg|jpeg|gif|eot|ttf|woff|woff2|svg|svgz)(\?.+)?$/,
+        use: [{
+          loader: 'url-loader',
+          options: {
+            limit: 10000
+          }
+        }]
       }
     ]
   },
+  plugins: [
+    new webpack.optimize.CommonsChunkPlugin({
+      names: ['vendor', 'manifest']
+    }),
+    new HtmlWebpackPlugin({
+      template: 'src/index.html'
+    })
+  ],
   resolve: {
     alias: {
-      'vue$': 'vue/dist/vue.esm.js'
+      '~': resolve(__dirname, 'src')
     }
   },
   devServer: {
-    historyApiFallback: true,
-    noInfo: true
+    host: '127.0.0.1',
+    port: 8010,
+    proxy: {
+      '/api/': {
+        target: 'http://127.0.0.1:8080',
+        changeOrigin: true,
+        pathRewrite: {
+          '^/api': ''
+        }
+      }
+    },
+    historyApiFallback: {
+      index: url.parse(options.dev ? '/assets/' : publicPath).pathname
+    }
   },
-  devtool: '#eval-source-map'
-}
-
-if (process.env.NODE_ENV === 'production') {
-  module.exports.devtool = '#source-map'
-  // http://vue-loader.vuejs.org/en/workflow/production.html
-  module.exports.plugins = (module.exports.plugins || []).concat([
-    new webpack.DefinePlugin({
-      'process.env': {
-        NODE_ENV: '"production"'
-      }
-    }),
-    new webpack.optimize.UglifyJsPlugin({
-      compress: {
-        warnings: false
-      }
-    }),
-    new webpack.optimize.OccurrenceOrderPlugin()
-  ])
-}
+  devtool: options.dev ? '#eval-source-map' : '#source-map'
+})
